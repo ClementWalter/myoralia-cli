@@ -122,6 +122,14 @@ def write_manifest(cache):
     )
 
 
+def filename(row):
+    """Keep exported names readable, bounded, and distinct across document IDs."""
+    name = re.sub(r"[^\w .()-]", "_", row["name"]).strip(" .")[:140] or "document"
+    if not name.lower().endswith(".pdf"):
+        name += ".pdf"
+    return f"{row['id']}-{name}"
+
+
 def export(cache, destination):
     """Export readable filenames without overwriting unrelated local files."""
     count = 0
@@ -129,11 +137,8 @@ def export(cache, destination):
         source = cache.blob(row["id"])
         if source is None:
             continue
-        name = re.sub(r"[^\w .()-]", "_", row["name"]).strip(" .")[:140] or "document"
-        if not name.lower().endswith(".pdf"):
-            name += ".pdf"
         section = re.sub(r"[^\w-]", "_", row["source"])
-        target = destination / section / f"{row['id']}-{name}"
+        target = destination / section / filename(row)
         body = source.read_bytes()
         if target.exists():
             if target.read_bytes() != body:

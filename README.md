@@ -85,12 +85,21 @@ archives and intervention details. It reports failed or unknown sections instead
 of calling an incomplete scan complete. Account-action pages are explicitly
 excluded in the coverage report.
 
-Copy
-an ID from `documents list` into `documents download`, with an explicit `-o`
-destination. IDs from every indexed section work without additional flags;
+Copy an ID from `documents list` into `documents download`. The command returns
+an absolute local `path` that agents can open directly. It verifies and reuses
+the persistent cached PDF, fetching and caching it on a miss. No separate sync
+or destination is required. Optionally pass `--target-dir DIRECTORY` for a copy
+with a readable filename, or `-o FILE` for an exact filename. IDs from every
+indexed section work without additional flags;
 `--useful` remains accepted for compatibility.
 Downloads must have a PDF signature, use owner-only permissions, and never
-overwrite an existing file. Failure to resolve a document writes nothing.
+overwrite a different existing file. Identical copies are safe to retry.
+
+```console
+myoralia documents download DOCUMENT_ID --json
+myoralia documents download DOCUMENT_ID --target-dir ./documents --json
+myoralia documents download DOCUMENT_ID -o ./document.pdf --offline --json
+```
 
 ## Document cache and bulk download
 

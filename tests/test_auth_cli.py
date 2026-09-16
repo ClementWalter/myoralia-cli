@@ -74,8 +74,8 @@ def test_existing_download_never_overwritten(tmp_path):
     assert output.read_bytes() == b"original"
 
 
-def test_missing_download_output_is_usage_error():
-    assert CliRunner().invoke(cli, ["documents", "download", "unused"]).exit_code == 2
+def test_missing_download_id_is_usage_error():
+    assert CliRunner().invoke(cli, ["documents", "download"]).exit_code == 2
 
 
 @pytest.mark.parametrize(

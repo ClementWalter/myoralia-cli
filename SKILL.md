@@ -21,7 +21,11 @@ when more than one account is present. Read commands:
 - `statement --from YYYY-MM-DD --to YYYY-MM-DD`: structured transactions.
 - `documents list --search TEXT`: cached inventory across read-only website sections.
 - `documents list --useful`: guides and Oralia publications.
-- `documents download DOCUMENT_ID -o OUTPUT.pdf`: verified PDF, no overwrite.
+- `documents download DOCUMENT_ID --json`: returns an absolute cached PDF `path`
+  to open directly; automatically fetches and caches missing files.
+- `documents download DOCUMENT_ID --target-dir DIRECTORY`: optional readable copy;
+  `-o OUTPUT.pdf` selects an exact filename. Identical copies are safe to retry;
+  different existing files are never overwritten.
 - `documents sync --output DIRECTORY --json`: refresh inventory, resume missing downloads,
   and export readable filenames grouped by section.
 - `documents status --json`: cache location, coverage, integrity counts, and failures.

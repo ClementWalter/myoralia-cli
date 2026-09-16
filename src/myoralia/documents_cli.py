@@ -53,7 +53,17 @@ def documents_list(account, search, useful, refresh, offline, max_age, as_json):
 
 @documents.command("download")
 @click.argument("document_id")
-@click.option("-o", "--output", required=True, type=click.Path(path_type=Path, dir_okay=False))
+@click.option(
+    "-o",
+    "--output",
+    type=click.Path(path_type=Path, dir_okay=False),
+    help="Optionally copy to an exact filename.",
+)
+@click.option(
+    "--target-dir",
+    type=click.Path(path_type=Path, file_okay=False),
+    help="Optionally copy into this directory with a readable document filename.",
+)
 @click.option(
     "--useful", is_flag=True, help="Accepted for compatibility; all sections are indexed."
 )
@@ -62,18 +72,35 @@ def documents_list(account, search, useful, refresh, offline, max_age, as_json):
 )
 @account_option
 @json_option
-def download(document_id, output, useful, offline, account, as_json):
-    """Save one PDF, reusing its verified cached copy when available.
+def download(document_id, output, target_dir, useful, offline, account, as_json):
+    """Return a local PDF path, fetching into the persistent cache only when needed.
 
-    Example: myoralia documents download DOCUMENT_ID -o document.pdf --offline
+    Without a destination, use the cached file directly. Identical copies are safe to retry.
+
+    \b
+    Examples:
+      myoralia documents download DOCUMENT_ID --json
+      myoralia documents download DOCUMENT_ID --target-dir ./documents --json
+      myoralia documents download DOCUMENT_ID -o document.pdf --offline
     """
-    if output.exists():
-        raise click.ClickException("Destination already exists. Choose another --output path.")
+    if output and target_dir:
+        raise click.UsageError("Choose either --output or --target-dir.")
     with service.catalog(account, offline) as cache:
         source = service.fetch(cache, document_id, offline)
+        if target_dir:
+            row = next(row for row in cache.documents() if row["id"] == document_id)
+            output = target_dir / service.filename(row)
         body = source.read_bytes()
-        atomic_write(output, body, overwrite=False)
-    emit({"id": document_id, "path": str(output), "bytes": len(body)}, as_json)
+        if output:
+            if output.exists():
+                if output.read_bytes() != body:
+                    raise click.ClickException(
+                        f"Destination differs; choose another path: {output}"
+                    )
+            else:
+                atomic_write(output, body, overwrite=False)
+        path = (output or source).resolve()
+    emit({"id": document_id, "path": str(path), "bytes": len(body)}, as_json)
 
 
 @documents.command("sync")

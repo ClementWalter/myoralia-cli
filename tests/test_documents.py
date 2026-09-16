@@ -67,6 +67,70 @@ def test_offline_download_avoids_network(cache, no_network, tmp_path):
     assert target.read_bytes() == b"%PDF-1.7\nexample"
 
 
+@pytest.mark.parametrize("flags", [[], ["--offline"]])
+def test_download_returns_cache_path_by_default(cache, no_network, flags):
+    source = cache.store("abc", b"%PDF-1.7\nexample")
+    result = CliRunner().invoke(cli, ["documents", "download", "abc", "--json", *flags])
+    assert json.loads(result.stdout)["path"] == str(source.resolve())
+
+
+def test_download_populates_cache_on_miss(cache, monkeypatch):
+    @contextmanager
+    def client():
+        yield SimpleNamespace(pdf=lambda url: b"%PDF-1.7\nfetched")
+
+    monkeypatch.setattr(documents, "Client", client)
+    monkeypatch.setattr(
+        documents.inventory,
+        "scan",
+        lambda *args: (
+            [{**cache.documents()[0], "_url": "https://myoralia.fr/pdf"}],
+            {"complete": True},
+        ),
+    )
+    CliRunner().invoke(cli, ["documents", "download", "abc", "--json"])
+    assert cache.blob("abc").read_bytes() == b"%PDF-1.7\nfetched"
+
+
+def test_download_to_target_directory(cache, no_network, tmp_path):
+    cache.store("abc", b"%PDF-1.7\nexample")
+    target = tmp_path / "nested" / "exports"
+    CliRunner().invoke(cli, ["documents", "download", "abc", "--target-dir", str(target)])
+    assert (target / "abc-example.pdf").read_bytes() == b"%PDF-1.7\nexample"
+
+
+@pytest.mark.parametrize("flag", ["--output", "--target-dir"])
+def test_download_copy_is_idempotent(cache, no_network, tmp_path, flag):
+    cache.store("abc", b"%PDF-1.7\nexample")
+    args = ["documents", "download", "abc", flag, str(tmp_path / "copy")]
+    CliRunner().invoke(cli, args)
+    assert CliRunner().invoke(cli, args).exit_code == 0
+
+
+def test_download_refuses_conflicting_destinations(cache, no_network, tmp_path):
+    result = CliRunner().invoke(
+        cli,
+        [
+            "documents",
+            "download",
+            "abc",
+            "-o",
+            str(tmp_path / "file"),
+            "--target-dir",
+            str(tmp_path),
+        ],
+    )
+    assert result.exit_code == 2
+
+
+def test_download_preserves_different_file(cache, no_network, tmp_path):
+    cache.store("abc", b"%PDF-1.7\nexample")
+    target = tmp_path / "abc-example.pdf"
+    target.write_bytes(b"original")
+    CliRunner().invoke(cli, ["documents", "download", "abc", "--target-dir", str(tmp_path)])
+    assert target.read_bytes() == b"original"
+
+
 def test_offline_missing_pdf_fails(cache, no_network, tmp_path):
     result = CliRunner().invoke(
         cli, ["documents", "download", "abc", "--offline", "-o", str(tmp_path / "missing.pdf")]
