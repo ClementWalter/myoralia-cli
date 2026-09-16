@@ -194,3 +194,20 @@ def test_expired_session_stops_bulk_requests(cache, monkeypatch):
     )
     documents.sync(cache)
     assert len(calls) == 1
+
+
+@pytest.mark.parametrize(
+    ("expired", "message"),
+    [(True, "myoralia login --browser chrome"), (False, "see errors above")],
+)
+def test_incomplete_sync_explains_recovery(cache, monkeypatch, expired, message):
+    @contextmanager
+    def catalog(*args, **kwargs):
+        yield cache
+
+    monkeypatch.setattr(documents, "catalog", catalog)
+    monkeypatch.setattr(
+        documents, "sync", lambda *args: {"complete": False, "session_expired": expired}
+    )
+    result = CliRunner().invoke(cli, ["documents", "sync", "--json"])
+    assert message in result.stderr

@@ -100,6 +100,11 @@ def sync(account, refresh_files, output, as_json):
             result["output"] = str(output.resolve())
     emit(result, as_json)
     if not result["complete"]:
+        if result.get("session_expired"):
+            raise click.ClickException(
+                "Session expired; downloaded PDFs are saved. Sign in at https://myoralia.fr/ "
+                "in Chrome, run `myoralia login --browser chrome`, then rerun this sync to resume."
+            )
         raise click.ClickException("Sync incomplete; see errors above. Rerun to resume.")
 
 
