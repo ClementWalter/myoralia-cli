@@ -65,6 +65,31 @@ def test_live_pdf_download_cli(documents, tmp_path):
     assert output.read_bytes().startswith(b"%PDF-")
 
 
+@pytest.fixture(scope="module")
+def cached_pdf_id(documents, tmp_path_factory):
+    target = tmp_path_factory.mktemp("cached-pdf") / "document.pdf"
+    subprocess.run(
+        ["myoralia", "documents", "download", documents[0]["id"], "-o", str(target)],
+        capture_output=True,
+        text=True,
+        check=True,
+        timeout=180,
+    )
+    return documents[0]["id"]
+
+
+def test_live_offline_pdf_download_cli(cached_pdf_id, tmp_path):
+    output = tmp_path / "offline.pdf"
+    subprocess.run(
+        ["myoralia", "documents", "download", cached_pdf_id, "--offline", "-o", str(output)],
+        capture_output=True,
+        text=True,
+        check=True,
+        timeout=30,
+    )
+    assert output.read_bytes().startswith(b"%PDF-")
+
+
 def test_live_useful_documents_cli():
     result = subprocess.run(
         ["myoralia", "documents", "list", "--useful", "--json"],

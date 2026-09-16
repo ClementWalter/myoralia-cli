@@ -3,38 +3,16 @@
 import json
 import logging
 import sys
-from pathlib import Path
 
 import click
 
 from . import auth, parsing
-from .client import SECTIONS, Client, public
+from .client import SECTIONS, Client
+from .documents_cli import documents
+from .output import account_option, emit, json_option
 
 log = logging.getLogger("myoralia")
 CONTEXT = {"help_option_names": ["-h", "--help"]}
-
-
-def emit(value, as_json):
-    value = public(value)
-    if as_json:
-        click.echo(json.dumps(value, ensure_ascii=False, indent=2))
-    elif isinstance(value, dict) and "text" in value:
-        click.echo(value["text"])
-    elif isinstance(value, list):
-        for row in value:
-            click.echo("  ".join(str(v) for v in row.values() if v is not None))
-    else:
-        click.echo(json.dumps(value, ensure_ascii=False, indent=2))
-
-
-def json_option(fn):
-    return click.option("--json", "as_json", is_flag=True, help="Emit JSON only on stdout.")(fn)
-
-
-def account_option(fn):
-    return click.option(
-        "--account", help="Exact ID from accounts list; required if multiple accounts."
-    )(fn)
 
 
 @click.group(context_settings=CONTEXT, invoke_without_command=True)
@@ -178,66 +156,7 @@ def statement(account, date_from, date_to, as_json):
     emit(data, as_json)
 
 
-@cli.group()
-def documents():
-    """List all document folders and download PDFs by stable ID.
-
-    Example: myoralia documents list --json
-    """
-
-
-@documents.command("list")
-@account_option
-@click.option("--search", help="Case-insensitive filename/category filter.")
-@click.option("--useful", is_flag=True, help="Read the website's Documents utiles section.")
-@json_option
-def documents_list(account, search, useful, as_json):
-    """Read personal documents and recursively loaded building folders.
-
-    Example: myoralia documents list --search "Appel" --json
-    """
-    log.info("Reading MyOralia document folders…")
-    with Client() as client:
-        data = client.documents(account, useful)
-    if search:
-        data = [
-            row
-            for row in data
-            if search.casefold() in (row["name"] + " " + row["category"]).casefold()
-        ]
-    emit(data, as_json)
-
-
-@documents.command("download")
-@click.argument("document_id")
-@click.option(
-    "-o",
-    "--output",
-    type=click.Path(path_type=Path, dir_okay=False),
-    required=True,
-    help="Destination PDF; existing files are never overwritten.",
-)
-@click.option("--useful", is_flag=True, help="Resolve ID in Documents utiles.")
-@account_option
-@json_option
-def download(document_id, output, useful, account, as_json):
-    """Save a verified PDF to an explicit path, without overwriting files.
-
-    Example: myoralia documents download DOCUMENT_ID -o document.pdf --json
-    Get DOCUMENT_ID from: myoralia documents list --json
-    """
-    if output.exists():
-        raise click.ClickException("Destination already exists. Choose another --output path.")
-    with Client() as client:
-        document, body = client.download(document_id, account, useful)
-    try:
-        # Exclusive creation preserves existing files even if another process wins a race.
-        with output.open("xb") as stream:
-            output.chmod(0o600)
-            stream.write(body)
-    except OSError as exc:
-        raise click.ClickException("Cannot write the PDF to --output.") from exc
-    emit({"id": document["id"], "path": str(output), "bytes": len(body)}, as_json)
+cli.add_command(documents)
 
 
 def section_command(name):

@@ -19,13 +19,25 @@ when more than one account is present. Read commands:
 
 - `building`, `agency`, `shares`, `agenda`, `meetings`, `news`: title and text.
 - `statement --from YYYY-MM-DD --to YYYY-MM-DD`: structured transactions.
-- `documents list --search TEXT`: personal files and recursive building folders.
+- `documents list --search TEXT`: cached inventory across read-only website sections.
 - `documents list --useful`: guides and Oralia publications.
 - `documents download DOCUMENT_ID -o OUTPUT.pdf`: verified PDF, no overwrite.
+- `documents sync --output DIRECTORY --json`: refresh inventory, resume missing downloads,
+  and export readable filenames grouped by section.
+- `documents status --json`: cache location, coverage, integrity counts, and failures.
 
 Use `--json` for parsing. Progress is on stderr. Resolve document IDs from a
-fresh list; do not invent or reuse signed `Urlhash` URLs. Use `--useful` on the
-download as well when the ID came from that section.
+list; do not invent or reuse signed `Urlhash` URLs. Listings cache for one hour;
+use `--refresh` to rescan or `--offline` to forbid network access. A cached PDF can
+also be downloaded with `--offline`. Download IDs resolve across all sections.
+
+Sync covers recursive library folders, AG PDF viewers, agenda, useful documents,
+the maintenance PDF, and read-only activity archive/detail pages. Read the coverage
+and failures in the result before reporting completeness. Sync resumes verified
+PDFs and deduplicates identical bytes; it exits nonzero for partial results.
+Use `--refresh-files` to check for replacements with unchanged names/metadata.
+The local cache is account-isolated under `~/.cache/myoralia-cli` by default;
+`documents status` gives the exact path and the manifest maps IDs to local PDFs.
 
 Statement amounts are decimal strings in EUR. Future-dated charges can appear.
 `balance_label` is the website's total even when transaction date filters are

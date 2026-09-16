@@ -6,6 +6,7 @@ import click
 import pytest
 
 from myoralia import parsing
+from myoralia.auth import SessionExpired
 from myoralia.client import Client, public
 
 
@@ -84,3 +85,21 @@ def test_recursive_folders_are_loaded(client, monkeypatch):
     monkeypatch.setattr(client, "section", lambda *a: root)
     monkeypatch.setattr(client, "request", lambda *a: SimpleNamespace(content=child))
     assert client.documents()[0]["category"] == "Contracts"
+
+
+def test_empty_download_checks_live_authentication(client, monkeypatch):
+    monkeypatch.setattr(client, "request", lambda *a: SimpleNamespace(content=b""))
+
+    def expired(url):
+        raise SessionExpired("Session expired")
+
+    monkeypatch.setattr(client, "page", expired)
+    with pytest.raises(SessionExpired):
+        client.pdf("unused")
+
+
+def test_empty_document_with_valid_authentication_is_unavailable(client, monkeypatch):
+    monkeypatch.setattr(client, "request", lambda *a: SimpleNamespace(content=b""))
+    monkeypatch.setattr(client, "page", lambda *a: parsing.soup("<h1>Account</h1>"))
+    with pytest.raises(click.ClickException, match="zero bytes"):
+        client.pdf("unused")

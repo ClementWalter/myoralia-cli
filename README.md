@@ -39,8 +39,9 @@ For a Chrome cookie JSON export, use `login --cookie-stdin`; it accepts a cookie
 array or an object with a `cookies` array. See `myoralia login --help`.
 
 The CLI uses the validated snapshot until it expires. Repeat `login` to import
-the current Chrome session. Every read checks authenticated page content and
+the current Chrome session. Online page reads check authenticated content and
 the account identity; HTTP 200 alone is not treated as authentication.
+Cached document reads use the local session identity without contacting the site.
 `logout` deletes the local CLI session, is safe to repeat, and leaves Chrome
 signed in. Read commands never silently log the CLI back in.
 
@@ -58,6 +59,9 @@ myoralia statement --from 2026-01-01 --json
 myoralia documents list --json
 myoralia documents list --search "Appel" --json
 myoralia documents list --useful --json
+myoralia documents sync --json
+myoralia documents list --offline --json
+myoralia documents status --json
 ```
 
 When several accounts exist, select the exact ID returned by `accounts list`
@@ -74,11 +78,61 @@ restrict transaction rows only; `balance_label` always remains the website's
 unfiltered balance. Building and informational sections return a title and text;
 account lists, documents, and statements have structured fields.
 
-Documents include personal files and recursively loaded building folders. Copy
+Documents include personal files, recursively loaded building folders, AG viewer
+attachments, agenda attachments, useful guides, and the maintenance PDF. The
+scanner also checks the other read-only navigation sections and follows activity
+archives and intervention details. It reports failed or unknown sections instead
+of calling an incomplete scan complete. Account-action pages are explicitly
+excluded in the coverage report.
+
+Copy
 an ID from `documents list` into `documents download`, with an explicit `-o`
-destination. Add `--useful` for an ID from the useful-documents list.
+destination. IDs from every indexed section work without additional flags;
+`--useful` remains accepted for compatibility.
 Downloads must have a PDF signature, use owner-only permissions, and never
 overwrite an existing file. Failure to resolve a document writes nothing.
+
+## Document cache and bulk download
+
+`documents list` reuses its complete inventory for one hour. `--refresh` forces
+a new scan, `--max-age SECONDS` controls freshness, and `--offline` makes no
+network requests. A partial scan is recorded but is never treated as a complete
+cached list. These cache options apply to documents; other read commands remain
+live reads.
+
+`documents sync` always refreshes the inventory, then downloads missing or corrupt
+PDFs. Successful downloads are checkpointed individually; rerunning after an
+interruption resumes them. Identical PDF contents share one SHA-256-addressed
+file, while every website reference and source section remains in the catalog.
+Sync returns a nonzero exit code if any section or download fails. If a download
+response indicates session expiry, it validates authentication and stops with
+completed PDFs checkpointed. Sign in again, run `login`, and rerun `sync`.
+
+```console
+myoralia documents sync --output ./oralia-documents --json
+myoralia documents status --json
+myoralia documents list --offline --json
+```
+
+`--output` additionally exports readable filenames grouped by website section.
+Repeated exports accept identical files and refuse to overwrite different files.
+Without `--output`, downloaded PDFs remain available in the cache. Single-file
+`documents download` reuses an integrity-checked cached PDF; add `--offline` to
+require a local copy.
+
+The cache lives under `$XDG_CACHE_HOME/myoralia-cli` (default
+`~/.cache/myoralia-cli`), isolated by login identity and account. Override its root
+with `MYORALIA_CACHE_DIR`. `documents status` reports the exact location,
+scan coverage, document/download counts, unique PDFs, and failures.
+Each account has an SQLite index, a `pdfs` directory, and a `manifest.json` written
+after sync that maps document names to cached files. Credentials and signed links
+are not stored in the index or manifest. Cache files use owner-only permissions.
+
+Existing PDFs are retained when their references disappear from the site.
+Unchanged document IDs are reused on subsequent syncs; use `--refresh-files` to
+detect replacements whose filenames and metadata did not change, including
+updated generated reports. Logout removes credentials but retains the downloaded
+archive. Offline CLI access requires a local login identity.
 
 The current commands are read-only. Account selection uses the site's context
 selection POST. The CLI does not send questions, report problems, vote, pay,

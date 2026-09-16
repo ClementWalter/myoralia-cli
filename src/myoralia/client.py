@@ -6,7 +6,7 @@ import click
 from curl_cffi import requests
 
 from . import parsing
-from .auth import load_session
+from .auth import SessionExpired, load_session
 
 SECTIONS = {
     "building": "bien_coproprietaire.php",
@@ -42,16 +42,21 @@ class Client:
         url = parsing.safe_url(url)
         try:
             for _ in range(6):
-                response = self.session.request(method, url, timeout=30, allow_redirects=False)
+                # AG convocations bundle large PDFs that can take more than thirty seconds.
+                timeout = (
+                    180
+                    if urlparse(url).path.rsplit("/", 1)[-1]
+                    in {"downdoc.php", "downdocged.php", "docpdf.php", "lettre.php", "carnet.php"}
+                    else 30
+                )
+                response = self.session.request(method, url, timeout=timeout, allow_redirects=False)
                 if response.status_code in {301, 302, 303, 307, 308}:
                     url = parsing.safe_url(response.headers.get("location", ""), url)
                     if response.status_code in {301, 302, 303}:
                         method = "GET"
                     continue
                 if response.status_code in {401, 403}:
-                    raise click.ClickException(
-                        "MyOralia rejected this session. Run myoralia login."
-                    )
+                    raise SessionExpired("MyOralia rejected this session. Run myoralia login.")
                 if response.status_code != 200:
                     raise click.ClickException(f"MyOralia returned HTTP {response.status_code}.")
                 return response
@@ -75,6 +80,16 @@ class Client:
                 "The session account changed. Run myoralia login explicitly."
             )
         return page
+
+    def pdf(self, url):
+        response = self.request(url)
+        if not response.content.startswith(b"%PDF-"):
+            # Download endpoints can return empty HTTP 200 responses after session expiry.
+            self.page(parsing.BASE + "selection_account.php")
+            if not response.content:
+                raise click.ClickException("MyOralia returned an empty document (zero bytes).")
+            raise click.ClickException("MyOralia did not return a PDF; no file was cached.")
+        return response.content
 
     def accounts(self):
         if self.account_page is None:
@@ -110,6 +125,10 @@ class Client:
 
     def documents(self, account=None, useful=False):
         page = self.section("useful-documents" if useful else "documents", account)
+        return self.document_tree(page)
+
+    def document_tree(self, page):
+        """Expand lazy folders from a document page already selected for this account."""
         result = parsing.documents(page)
         pending = [(folder, "") for folder in parsing.folders(page)]
         visited = set()

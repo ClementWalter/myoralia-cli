@@ -9,7 +9,7 @@ from urllib.parse import urljoin, urlparse
 import click
 from bs4 import BeautifulSoup
 
-from .auth import ORIGIN
+from .auth import ORIGIN, SessionExpired
 
 BASE = ORIGIN + "/extranet/"
 
@@ -34,9 +34,7 @@ def safe_url(url, base=BASE):
 
 def identity(page):
     if page.select_one('input[type="password"]'):
-        raise click.ClickException(
-            "MyOralia session expired. Sign in to Chrome, then myoralia login."
-        )
+        raise SessionExpired("MyOralia session expired. Sign in to Chrome, then myoralia login.")
     # Help modals reuse the header ID, so welcome text identifies the account header.
     headers = " ".join(text(header) for header in page.select("#page-header"))
     match = re.search(r"Bienvenue\s+(.+?)(?=\s+Compte|\s+Mon profil|$)", headers)

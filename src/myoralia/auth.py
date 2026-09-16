@@ -14,6 +14,10 @@ import websocket
 ORIGIN = "https://myoralia.fr"
 
 
+class SessionExpired(click.ClickException):
+    """An expired provider session requires login before more downloads are attempted."""
+
+
 def config_path():
     root = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config"))
     return root / "myoralia-cli" / "session.json"
