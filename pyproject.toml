@@ -1,0 +1,29 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "myoralia-cli"
+version = "0.1.0"
+description = "Read your MyOralia coproprietaire account from the terminal"
+requires-python = ">=3.11"
+dependencies = ["beautifulsoup4>=4.12", "click>=8.1", "curl-cffi>=0.13", "browser-cookie3>=0.20", "websocket-client>=1.8"]
+
+[project.scripts]
+myoralia = "myoralia.cli:main"
+
+[dependency-groups]
+dev = ["pytest>=8", "ruff>=0.12", "build>=1"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/myoralia"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["live: reads the real account using an explicitly enabled local session"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
