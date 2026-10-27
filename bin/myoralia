@@ -1,0 +1,31 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.11"
+# # Exact pins, identical to pyproject.toml.
+# dependencies = [
+#     "beautifulsoup4==4.15.0",
+#     "click==8.5.0",
+#     "curl-cffi==0.16.3",
+#     "browser-cookie3==0.20.1",
+#     "websocket-client==1.9.2",
+# ]
+#
+# [tool.uv]
+# exclude-newer = "2026-10-27T00:00:00Z"
+# ///
+"""Launcher for the MyOralia CLI that runs the checkout without installing it.
+
+The real CLI lives in ``myoralia.cli``; this shim only makes the repo's
+``src/`` importable.
+"""
+
+import sys
+from pathlib import Path
+
+# Resolve through the ~/.local/bin symlink to reach this checkout's src/.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
+
+from myoralia.cli import main  # noqa: E402
+
+if __name__ == "__main__":
+    main()

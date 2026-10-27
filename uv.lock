@@ -1,6 +1,9 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.11"
+
+[options]
+exclude-newer = "2026-10-27T00:00:00Z"
 
 [[package]]
 name = "beautifulsoup4"
@@ -20,7 +23,7 @@ name = "browser-cookie3"
 version = "0.20.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "jeepney", marker = "'bsd' in sys_platform or sys_platform == 'linux'" },
+    { name = "jeepney", marker = "sys_platform == 'linux' or 'bsd' in sys_platform" },
     { name = "lz4" },
     { name = "pycryptodomex" },
     { name = "shadowcopy", marker = "sys_platform == 'win32'" },
@@ -270,7 +273,6 @@ wheels = [
 
 [[package]]
 name = "myoralia-cli"
-version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "beautifulsoup4" },
@@ -289,18 +291,18 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "beautifulsoup4", specifier = ">=4.12" },
-    { name = "browser-cookie3", specifier = ">=0.20" },
-    { name = "click", specifier = ">=8.1" },
-    { name = "curl-cffi", specifier = ">=0.13" },
-    { name = "websocket-client", specifier = ">=1.8" },
+    { name = "beautifulsoup4", specifier = "==4.15.0" },
+    { name = "browser-cookie3", specifier = "==0.20.1" },
+    { name = "click", specifier = "==8.5.0" },
+    { name = "curl-cffi", specifier = "==0.16.3" },
+    { name = "websocket-client", specifier = "==1.9.2" },
 ]
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "build", specifier = ">=1" },
-    { name = "pytest", specifier = ">=8" },
-    { name = "ruff", specifier = ">=0.12" },
+    { name = "build", specifier = "==1.6.1" },
+    { name = "pytest", specifier = "==9.1.1" },
+    { name = "ruff", specifier = "==0.16.7" },
 ]
 
 [[package]]

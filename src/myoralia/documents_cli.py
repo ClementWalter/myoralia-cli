@@ -9,15 +9,26 @@ from .cache import atomic_write
 from .output import account_option, emit, json_option
 
 
-@click.group(context_settings={"help_option_names": ["-h", "--help"]})
+@click.group(
+    context_settings={"help_option_names": ["-h", "--help"]},
+    epilog=(
+        "\b\nExamples:\n  myoralia documents list --search budget\n  myoralia documents sync --json"
+    ),
+)
 def documents():
-    """Cache and download documents across the account's read-only sections.
-
-    Example: myoralia documents sync --json
-    """
+    """Cache and download documents across the account's read-only sections."""
 
 
-@documents.command("list")
+@documents.command(
+    "list",
+    epilog=(
+        "\b\n"
+        "Examples:\n"
+        "  myoralia documents list --json\n"
+        "  myoralia documents list --search budget --offline\n"
+        "  myoralia documents list --useful --refresh"
+    ),
+)
 @account_option
 @click.option("--search", help="Case-insensitive filename/category filter.")
 @click.option("--useful", is_flag=True, help="Only Documents utiles.")
@@ -32,10 +43,7 @@ def documents():
 )
 @json_option
 def documents_list(account, search, useful, refresh, offline, max_age, as_json):
-    """List all discovered attachments; cached for one hour by default.
-
-    Example: myoralia documents list --offline --json
-    """
+    """List all discovered attachments; cached for one hour by default."""
     if offline and refresh:
         raise click.UsageError("--offline and --refresh are mutually exclusive.")
     with service.catalog(account, offline, refresh) as cache:
@@ -51,7 +59,16 @@ def documents_list(account, search, useful, refresh, offline, max_age, as_json):
         emit(rows, as_json)
 
 
-@documents.command("download")
+@documents.command(
+    "download",
+    epilog=(
+        "\b\n"
+        "Examples:\n"
+        "  myoralia documents download DOCUMENT_ID --json\n"
+        "  myoralia documents download DOCUMENT_ID --target-dir ./documents --json\n"
+        "  myoralia documents download DOCUMENT_ID -o document.pdf --offline"
+    ),
+)
 @click.argument("document_id")
 @click.option(
     "-o",
@@ -76,12 +93,6 @@ def download(document_id, output, target_dir, useful, offline, account, as_json)
     """Return a local PDF path, fetching into the persistent cache only when needed.
 
     Without a destination, use the cached file directly. Identical copies are safe to retry.
-
-    \b
-    Examples:
-      myoralia documents download DOCUMENT_ID --json
-      myoralia documents download DOCUMENT_ID --target-dir ./documents --json
-      myoralia documents download DOCUMENT_ID -o document.pdf --offline
     """
     if output and target_dir:
         raise click.UsageError("Choose either --output or --target-dir.")
@@ -103,7 +114,15 @@ def download(document_id, output, target_dir, useful, offline, account, as_json)
     emit({"id": document_id, "path": str(path), "bytes": len(body)}, as_json)
 
 
-@documents.command("sync")
+@documents.command(
+    "sync",
+    epilog=(
+        "\b\n"
+        "Examples:\n"
+        "  myoralia documents sync --json\n"
+        "  myoralia documents sync --output ./oralia-documents --json"
+    ),
+)
 @account_option
 @click.option(
     "--refresh-files", is_flag=True, help="Re-download PDFs to detect same-metadata replacements."
@@ -116,10 +135,7 @@ def download(document_id, output, target_dir, useful, offline, account, as_json)
 )
 @json_option
 def sync(account, refresh_files, output, as_json):
-    """Refresh the inventory and download missing PDFs; reruns resume verified progress.
-
-    Example: myoralia documents sync --output ./oralia-documents --json
-    """
+    """Refresh the inventory and download missing PDFs; reruns resume verified progress."""
     with service.catalog(account, refresh=True) as cache:
         result = service.sync(cache, refresh_files)
         if output:
@@ -135,13 +151,10 @@ def sync(account, refresh_files, output, as_json):
         raise click.ClickException("Sync incomplete; see errors above. Rerun to resume.")
 
 
-@documents.command("status")
+@documents.command("status", epilog="\b\nExamples:\n  myoralia documents status --json")
 @account_option
 @json_option
 def status(account, as_json):
-    """Inspect cache location, scan coverage, failures, and PDF integrity without network access.
-
-    Example: myoralia documents status --json
-    """
+    """Inspect cache location, scan coverage, failures, and PDF integrity without network access."""
     with service.catalog(account, offline=True) as cache:
         emit(cache.status(), as_json)

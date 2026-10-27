@@ -6,7 +6,7 @@ import sys
 
 import click
 
-from . import auth, parsing
+from . import __version__, auth, parsing
 from .client import SECTIONS, Client
 from .documents_cli import documents
 from .output import account_option, emit, json_option
@@ -15,23 +15,35 @@ log = logging.getLogger("myoralia")
 CONTEXT = {"help_option_names": ["-h", "--help"]}
 
 
-@click.group(context_settings=CONTEXT, invoke_without_command=True)
-@click.version_option(package_name="myoralia-cli")
+@click.group(
+    context_settings=CONTEXT,
+    invoke_without_command=True,
+    epilog=(
+        "\b\n"
+        "Examples:\n"
+        "  myoralia login --browser chrome\n"
+        "  myoralia whoami --json\n"
+        "  myoralia accounts list --json\n"
+        "  myoralia documents list --json"
+    ),
+)
+@click.version_option(__version__, prog_name="myoralia")
 @click.pass_context
 def cli(ctx):
-    """Read your MyOralia account using a Chrome session.
-
-    \b
-    Examples:
-      myoralia login --browser chrome
-      myoralia accounts list --json
-      myoralia documents list --json
-    """
+    """Read your MyOralia account using a Chrome session."""
     if ctx.invoked_subcommand is None:
         click.echo(ctx.get_help())
 
 
-@cli.command()
+@cli.command(
+    epilog=(
+        "\b\n"
+        "Examples:\n"
+        "  myoralia login --browser chrome\n"
+        "  myoralia login --cookie-stdin < cookies.json\n"
+        "  myoralia login --cdp-url http://localhost:9222 --json"
+    ),
+)
 @click.option("--browser", type=click.Choice(["chrome"]), default="chrome", show_default=True)
 @click.option(
     "--cookie-file",
@@ -44,14 +56,7 @@ def cli(ctx):
 )
 @json_option
 def login(browser, cookie_file, cookie_stdin, cdp_url, as_json):
-    """Validate Chrome authentication before saving it locally.
-
-    \b
-    Examples:
-      myoralia login --browser chrome
-      myoralia login --cookie-stdin < cookies.json
-      myoralia login --cdp-url http://localhost:9222 --json
-    """
+    """Validate Chrome authentication before saving it locally."""
     if sum(bool(value) for value in (cookie_file, cookie_stdin, cdp_url)) > 1:
         raise click.UsageError("Choose only one of --cookie-file, --cookie-stdin, --cdp-url.")
     if cookie_stdin:
@@ -72,35 +77,26 @@ def login(browser, cookie_file, cookie_stdin, cdp_url, as_json):
     emit({"authenticated": True, **identity}, as_json)
 
 
-@cli.command()
+@cli.command(epilog="\b\nExamples:\n  myoralia logout --json")
 @json_option
 def logout(as_json):
-    """Remove local CLI credentials; the Chrome website stays signed in.
-
-    Example: myoralia logout --json
-    """
+    """Remove local CLI credentials; the Chrome website stays signed in."""
     auth.config_path().unlink(missing_ok=True)
     emit({"authenticated": False, "scope": "local-cli"}, as_json)
 
 
-@cli.command()
+@cli.command(epilog="\b\nExamples:\n  myoralia whoami\n  myoralia whoami --json")
 @json_option
 def whoami(as_json):
-    """Verify the current session against MyOralia.
-
-    Example: myoralia whoami --json
-    """
+    """Verify the current session against MyOralia."""
     with Client() as client:
         emit(client.whoami(), as_json)
 
 
-@cli.command()
+@cli.command(epilog="\b\nExamples:\n  myoralia doctor --json")
 @json_option
 def doctor(as_json):
-    """Check local credential permissions and live authentication.
-
-    Example: myoralia doctor --json
-    """
+    """Check local credential permissions and live authentication."""
     with Client() as client:
         data = client.whoami()
     mode = auth.config_path().stat().st_mode & 0o777
@@ -112,26 +108,30 @@ def doctor(as_json):
     )
 
 
-@cli.group()
+@cli.group(epilog="\b\nExamples:\n  myoralia accounts list --json")
 def accounts():
-    """Discover stable account IDs.
-
-    Example: myoralia accounts list --json
-    """
+    """Discover stable account IDs."""
 
 
-@accounts.command("list")
+@accounts.command(
+    "list", epilog="\b\nExamples:\n  myoralia accounts list\n  myoralia accounts list --json"
+)
 @json_option
 def accounts_list(as_json):
-    """List properties available to the signed-in user.
-
-    Example: myoralia accounts list --json
-    """
+    """List properties available to the signed-in user."""
     with Client() as client:
         emit(client.accounts(), as_json)
 
 
-@cli.command("statement")
+@cli.command(
+    "statement",
+    epilog=(
+        "\b\n"
+        "Examples:\n"
+        "  myoralia statement --json\n"
+        "  myoralia statement --from 2026-01-01 --to 2026-06-30 --json"
+    ),
+)
 @account_option
 @click.option("--from", "date_from", type=click.DateTime(formats=["%Y-%m-%d"]))
 @click.option("--to", "date_to", type=click.DateTime(formats=["%Y-%m-%d"]))
@@ -140,8 +140,6 @@ def statement(account, date_from, date_to, as_json):
     """Read transactions and the website's balance, including future-dated entries.
 
     Date filters restrict transactions only; balance_label remains the website total.
-
-    Example: myoralia statement --from 2026-01-01 --json
     """
     if date_from and date_to and date_from > date_to:
         raise click.UsageError("--from must be on or before --to.")
@@ -160,14 +158,16 @@ cli.add_command(documents)
 
 
 def section_command(name):
-    @cli.command(name)
+    @cli.command(
+        name,
+        help=f"Read the {name} section.",
+        epilog=f"\b\nExamples:\n  myoralia {name}\n  myoralia {name} --account ACCOUNT_ID --json",
+    )
     @account_option
     @json_option
     def read_section(account, as_json):
         with Client() as client:
             emit(parsing.content(client.section(name, account)), as_json)
-
-    read_section.help = f"Read the {name} section.\n\nExample: myoralia {name} --json"
 
 
 for section in SECTIONS.keys() - {"documents", "useful-documents", "statement"}:

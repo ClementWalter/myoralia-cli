@@ -18,6 +18,7 @@ AGENTS.md
 # Local credentials and generated artifacts never belong in source control.
 .venv/
 __pycache__/
+*.pyc
 .pytest_cache/
 .ruff_cache/
 dist/

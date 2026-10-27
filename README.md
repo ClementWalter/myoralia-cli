@@ -1,5 +1,7 @@
 # myoralia-cli
 
+**Visibility: private.** (pending review — no reason found)
+
 Read your [MyOralia](https://myoralia.fr/) copropriétaire account from the terminal,
 using your signed-in Chrome session. Supports account discovery, building and
 agency information, tantièmes, agenda, general meetings, news, statements,
@@ -10,12 +12,13 @@ recursive document listing, and PDF downloads.
 Requires Python 3.11+, `uv`, and Chrome for the initial login.
 
 ```console
-uv tool install --editable .
+uv run claudine/scripts/link_clis.py   # links bin/myoralia into ~/.local/bin
 myoralia --help
 ```
 
-The editable installation runs the current checkout. Dependencies are pinned in
-`uv.lock`; contributors can use `uv sync` and `uv run myoralia`.
+`bin/myoralia` is a PEP 723 shim that runs the current checkout's `src/` with the
+dependencies pinned exactly as in `pyproject.toml`. Contributors can use
+`uv sync` and `uv run myoralia`.
 
 ## Authentication
 
