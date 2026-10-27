@@ -1,6 +1,6 @@
 # myoralia-cli
 
-**Visibility: private.** (pending review — no reason found)
+**Visibility: public.**
 
 Read your [MyOralia](https://myoralia.fr/) copropriétaire account from the terminal,
 using your signed-in Chrome session. Supports account discovery, building and
