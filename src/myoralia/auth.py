@@ -12,6 +12,14 @@ import click
 import websocket
 
 ORIGIN = "https://myoralia.fr"
+# How to get a session back, phrased for a terminal and for Claude Desktop,
+# where `connect` is a tool. The keychain prompt is named because denying it
+# looks exactly like being signed out.
+RECONNECT = (
+    "Sign in at https://myoralia.fr in Chrome, then run `myoralia connect` (the "
+    "`connect` tool in Claude). If macOS asks to let `security` use the "
+    '"Chrome Safe Storage" keychain item, click Always Allow.'
+)
 
 
 class SessionExpired(click.ClickException):
@@ -48,9 +56,7 @@ def normalize_cookies(value):
             continue
         result.append({key: row[key] for key in ("name", "value", "domain", "path")})
     if not any(row["name"] == "PHPSESSID" for row in result):
-        raise click.ClickException(
-            "No live MyOralia PHPSESSID cookie. Sign in to myoralia.fr in Chrome."
-        )
+        raise click.ClickException("No live MyOralia session cookie in Chrome. " + RECONNECT)
     return result
 
 
@@ -62,7 +68,9 @@ def chrome_cookies(cookie_file=None):
     except Exception as exc:
         # Provider errors can contain local credential details.
         raise click.ClickException(
-            "Could not read Chrome cookies. Use login --cdp-url or login --cookie-stdin."
+            "Could not read Chrome cookies. "
+            + RECONNECT
+            + " From a terminal, login --cdp-url or login --cookie-stdin also work."
         ) from exc
     return normalize_cookies(
         [
@@ -140,6 +148,4 @@ def load_session():
         data["cookies"] = normalize_cookies(data)
         return data
     except (OSError, ValueError, KeyError) as exc:
-        raise click.ClickException(
-            "No valid CLI session. Run: myoralia login --browser chrome"
-        ) from exc
+        raise click.ClickException("Not connected to MyOralia. " + RECONNECT) from exc

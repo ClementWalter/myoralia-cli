@@ -262,7 +262,7 @@ def test_expired_session_stops_bulk_requests(cache, monkeypatch):
 
 @pytest.mark.parametrize(
     ("expired", "message"),
-    [(True, "myoralia login --browser chrome"), (False, "see errors above")],
+    [(True, "myoralia connect"), (False, "see errors above")],
 )
 def test_incomplete_sync_explains_recovery(cache, monkeypatch, expired, message):
     @contextmanager

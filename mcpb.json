@@ -1,0 +1,18 @@
+{
+  "display_name": "MyOralia",
+  "description": "Read your MyOralia co-owner account from Claude: building, statement, meetings and documents.",
+  "long_description": "Reads your MyOralia (Oralia) co-owner space: your building and shares, the account statement and balance, general meetings, the agency's contacts, the agenda, and every PDF document, which it can save to your Mac.\n\nSetup:\n1. In Google Chrome, sign in at https://myoralia.fr with your co-owner account.\n2. In Claude, ask: \"connect my MyOralia account\". macOS asks whether `security` may use the \"Chrome Safe Storage\" keychain item: type your Mac password and click Always Allow. This copies your Chrome session into the extension; nothing is sent anywhere else.\n\nWhen MyOralia signs you out (Claude will say the session expired), sign in at myoralia.fr in Chrome again and ask Claude to connect once more. Documents are saved in the Download folder from this extension's settings (Downloads/MyOralia by default).",
+  "platforms": ["darwin"],
+  "env": {
+    "MYORALIA_DOWNLOAD_DIR": "${user_config.download_dir}"
+  },
+  "user_config": {
+    "download_dir": {
+      "type": "directory",
+      "title": "Download folder",
+      "description": "Where documents are saved.",
+      "default": "~/Downloads/MyOralia",
+      "required": false
+    }
+  }
+}

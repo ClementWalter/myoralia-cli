@@ -1,10 +1,12 @@
 """Document commands expose cached listings, offline downloads, and resumable sync."""
 
+import os
 from pathlib import Path
 
 import click
 
 from . import documents as service
+from .auth import RECONNECT
 from .cache import atomic_write
 from .output import account_option, emit, json_option
 
@@ -17,6 +19,16 @@ from .output import account_option, emit, json_option
 )
 def documents():
     """Cache and download documents across the account's read-only sections."""
+
+
+def export_dir():
+    """$MYORALIA_DOWNLOAD_DIR, the folder PDFs are copied to when no destination is given.
+
+    Claude Desktop sets it so documents land somewhere Finder shows; unset, a
+    download stays in the cache. `~` and `$VARS` are expanded.
+    """
+    value = os.environ.get("MYORALIA_DOWNLOAD_DIR", "").strip()
+    return Path(os.path.expandvars(value)).expanduser() if value else None
 
 
 @documents.command(
@@ -96,6 +108,8 @@ def download(document_id, output, target_dir, useful, offline, account, as_json)
     """
     if output and target_dir:
         raise click.UsageError("Choose either --output or --target-dir.")
+    if not output and not target_dir:
+        target_dir = export_dir()
     with service.catalog(account, offline) as cache:
         source = service.fetch(cache, document_id, offline)
         if target_dir:
@@ -136,6 +150,7 @@ def download(document_id, output, target_dir, useful, offline, account, as_json)
 @json_option
 def sync(account, refresh_files, output, as_json):
     """Refresh the inventory and download missing PDFs; reruns resume verified progress."""
+    output = output or export_dir()
     with service.catalog(account, refresh=True) as cache:
         result = service.sync(cache, refresh_files)
         if output:
@@ -145,8 +160,9 @@ def sync(account, refresh_files, output, as_json):
     if not result["complete"]:
         if result.get("session_expired"):
             raise click.ClickException(
-                "Session expired; downloaded PDFs are saved. Sign in at https://myoralia.fr/ "
-                "in Chrome, run `myoralia login --browser chrome`, then rerun this sync to resume."
+                "Session expired; downloaded PDFs are saved. "
+                + RECONNECT
+                + " Then rerun this sync to resume."
             )
         raise click.ClickException("Sync incomplete; see errors above. Rerun to resume.")
 

@@ -25,12 +25,12 @@ dependencies pinned exactly as in `pyproject.toml`. Contributors can use
 Sign in at `https://myoralia.fr/` in Chrome, then:
 
 ```console
-myoralia login --browser chrome --json
+myoralia connect --json
 myoralia whoami --json
 myoralia doctor --json
 ```
 
-`login` imports only MyOralia cookies, validates them against the live account,
+`connect` (or `login --browser chrome`) imports only MyOralia cookies, validates them against the live account,
 then atomically saves them with mode `0600` beneath
 `$XDG_CONFIG_HOME/myoralia-cli` (default `~/.config/myoralia-cli`). A failed login
 preserves the previous session. Browser cookie decryption may require access to
@@ -41,7 +41,7 @@ For an existing local Chrome DevTools connection, use `login --cdp-url`.
 For a Chrome cookie JSON export, use `login --cookie-stdin`; it accepts a cookie
 array or an object with a `cookies` array. See `myoralia login --help`.
 
-The CLI uses the validated snapshot until it expires. Repeat `login` to import
+The CLI uses the validated snapshot until it expires. Repeat `connect` to import
 the current Chrome session. Online page reads check authenticated content and
 the account identity; HTTP 200 alone is not treated as authentication.
 Cached document reads use the local session identity without contacting the site.
@@ -118,7 +118,20 @@ interruption resumes them. Identical PDF contents share one SHA-256-addressed
 file, while every website reference and source section remains in the catalog.
 Sync returns a nonzero exit code if any section or download fails. If a download
 response indicates session expiry, it validates authentication and stops with
-completed PDFs checkpointed. Sign in again, run `login`, and rerun `sync`.
+completed PDFs checkpointed. Sign in again, run `connect`, and rerun `sync`.
+
+With `$MYORALIA_DOWNLOAD_DIR` set (`~` and `$VARS` expand), `documents download`
+without a destination copies the PDF there instead of returning the cache path,
+and `documents sync` exports there as if given `--output`.
+
+## Claude Desktop extension
+
+`mcpb.json` customizes the extension `mcp-bridge pack myoralia-cli` builds, so
+someone without a terminal can install it by double-click. The user signs in at
+myoralia.fr in Chrome and asks Claude to connect, which calls `connect`; macOS
+asks once for the "Chrome Safe Storage" keychain item. The extension sets
+`MYORALIA_DOWNLOAD_DIR` to its Download folder setting (default
+`~/Downloads/MyOralia`).
 
 ```console
 myoralia documents sync --output ./oralia-documents --json

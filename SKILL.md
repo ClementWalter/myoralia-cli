@@ -17,9 +17,11 @@ package from the checkout's `src/`.
 
 ## Authentication
 
-Start with `myoralia whoami --json`. If the session is missing or expired, sign
-in on `https://myoralia.fr/` in Chrome and run `myoralia login --browser chrome`.
-The CLI also accepts a Chrome cookie export through `login --cookie-stdin` and
+Start with `myoralia whoami --json`. If the session is missing or expired, ask
+the user to sign in on `https://myoralia.fr/` in Chrome, then run
+`myoralia connect` (it reads the Chrome session, validates it and saves it; it
+is the `connect` tool under Claude Desktop). `login --browser chrome` does the
+same from a terminal. The CLI also accepts a Chrome cookie export through `login --cookie-stdin` and
 an existing local DevTools connection through `login --cdp-url`.
 Never put cookie values in command arguments, documentation, or responses.
 `logout` removes only the local CLI session and does not log Chrome out.
@@ -51,7 +53,7 @@ myoralia documents sync --output DIRECTORY --json
 myoralia documents status --json            # cache location, coverage, failures
 
 # Local session only (no website writes exist)
-myoralia login --browser chrome
+myoralia connect                            # import the signed-in Chrome session
 myoralia logout --json
 ```
 

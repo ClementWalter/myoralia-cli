@@ -60,7 +60,7 @@ def test_logout_is_idempotent():
 
 
 def test_logged_out_command_has_actionable_error():
-    assert "myoralia login" in CliRunner().invoke(cli, ["whoami"]).output
+    assert "myoralia connect" in CliRunner().invoke(cli, ["whoami"]).output
 
 
 def test_bare_cli_is_successful_discovery():
@@ -83,6 +83,7 @@ def test_missing_download_id_is_usage_error():
     [
         [],
         ["login"],
+        ["connect"],
         ["logout"],
         ["whoami"],
         ["doctor"],
@@ -119,4 +120,4 @@ def test_subprocess_error_uses_stderr():
     result = subprocess.run(
         ["myoralia", "whoami", "--json"], capture_output=True, text=True, env=os.environ.copy()
     )
-    assert "myoralia login" in result.stderr
+    assert "myoralia connect" in result.stderr

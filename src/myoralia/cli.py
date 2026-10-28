@@ -21,7 +21,7 @@ CONTEXT = {"help_option_names": ["-h", "--help"]}
     epilog=(
         "\b\n"
         "Examples:\n"
-        "  myoralia login --browser chrome\n"
+        "  myoralia connect\n"
         "  myoralia whoami --json\n"
         "  myoralia accounts list --json\n"
         "  myoralia documents list --json"
@@ -71,6 +71,25 @@ def login(browser, cookie_file, cookie_stdin, cdp_url, as_json):
     else:
         log.info("Reading MyOralia cookies from Chrome…")
         cookies = auth.chrome_cookies(cookie_file)
+    save_validated(cookies, as_json)
+
+
+@cli.command(
+    epilog="\b\nExamples:\n  myoralia connect\n  myoralia connect --json",
+)
+@json_option
+def connect(as_json):
+    """Import the MyOralia session of the signed-in Chrome, validate it, and save it.
+
+    Sign in at https://myoralia.fr in Chrome first, and run it again after the
+    website signs you out.
+    """
+    log.info("Reading MyOralia cookies from Chrome…")
+    save_validated(auth.chrome_cookies(), as_json)
+
+
+def save_validated(cookies, as_json):
+    """Save cookies only once the live account accepts them; a failure keeps the old session."""
     with Client(cookies) as client:
         identity = client.whoami()
     auth.save_session(cookies, identity["name"])
@@ -101,7 +120,9 @@ def doctor(as_json):
         data = client.whoami()
     mode = auth.config_path().stat().st_mode & 0o777
     if mode & 0o077:
-        raise click.ClickException("Session file is readable by other users; rerun myoralia login.")
+        raise click.ClickException(
+            "Session file is readable by other users; rerun `myoralia connect`."
+        )
     emit(
         {"ok": True, "session_permissions": oct(mode), "account_count": len(data["accounts"])},
         as_json,

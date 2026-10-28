@@ -6,7 +6,7 @@ import click
 from curl_cffi import requests
 
 from . import parsing
-from .auth import SessionExpired, load_session
+from .auth import RECONNECT, SessionExpired, load_session
 
 SECTIONS = {
     "building": "bien_coproprietaire.php",
@@ -56,7 +56,7 @@ class Client:
                         method = "GET"
                     continue
                 if response.status_code in {401, 403}:
-                    raise SessionExpired("MyOralia rejected this session. Run myoralia login.")
+                    raise SessionExpired("MyOralia rejected this session. " + RECONNECT)
                 if response.status_code != 200:
                     raise click.ClickException(f"MyOralia returned HTTP {response.status_code}.")
                 return response
@@ -77,7 +77,7 @@ class Client:
         name = parsing.identity(page)
         if self.expected_identity and name != self.expected_identity:
             raise click.ClickException(
-                "The session account changed. Run myoralia login explicitly."
+                "The session account changed. Run `myoralia connect` explicitly to switch."
             )
         return page
 
