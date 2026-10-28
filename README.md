@@ -191,3 +191,9 @@ validation. Credentials, PDFs, and private HTML are excluded from the repository
 Live validation on 2026-09-16 covered Chrome import, identity, account selection,
 all informational commands, the statement, recursive documents, and a real PDF
 download. Counts are account state, not parser assumptions.
+
+## Privacy Policy
+
+The Claude Desktop extension built from this repository keeps your data on your
+Mac and talks only to the service it connects to. Full policy:
+<https://clementwalter.github.io/claude-extensions/privacy/>
