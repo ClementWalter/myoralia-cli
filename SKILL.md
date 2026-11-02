@@ -23,6 +23,12 @@ the user to sign in on `https://myoralia.fr/` in Chrome, then run
 is the `connect` tool under Claude Desktop). `login --browser chrome` does the
 same from a terminal. The CLI also accepts a Chrome cookie export through `login --cookie-stdin` and
 an existing local DevTools connection through `login --cdp-url`.
+If `connect` still reports an expired session, Chrome is signed out too: only
+the user can fix that. Ask them, in your reply, to sign in on myoralia.fr in
+Chrome, and do not retry `connect`/`login` until they say so. Meanwhile, work
+from the cache with `--offline` (`documents list`, `documents download`), and to
+search inside PDFs use the cache path from `documents status --json`; state that
+the answer comes from the cache and give its `fetched_at` date.
 Never put cookie values in command arguments, documentation, or responses.
 `logout` removes only the local CLI session and does not log Chrome out.
 
